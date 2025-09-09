@@ -1,0 +1,452 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model audit_logs {
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  actor_user_id String?  @db.Uuid
+  action        String?  @db.VarChar(80)
+  entity        String?  @db.VarChar(60)
+  entity_id     String?  @db.Uuid
+  metadata      Json?
+  created_at    DateTime @default(now()) @db.Timestamptz(6)
+  users         users?   @relation(fields: [actor_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model chat_participants {
+  chat_id              String                     @db.Uuid
+  user_id              String                     @db.Uuid
+  role                 chat_participant_role_enum @default(membro)
+  joined_at            DateTime                   @default(now()) @db.Timestamptz(6)
+  last_read_message_id String?                    @db.Uuid
+  chats                chats                      @relation(fields: [chat_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  messages             messages?                  @relation(fields: [last_read_message_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users                users                      @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([chat_id, user_id])
+}
+
+model chats {
+  id                String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  scope             chat_scope_enum     @default(project)
+  project_id        String?             @db.Uuid
+  classroom_id      String?             @db.Uuid
+  created_at        DateTime            @default(now()) @db.Timestamptz(6)
+  chat_participants chat_participants[]
+  classrooms        classrooms?         @relation(fields: [classroom_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  projects          projects?           @relation(fields: [project_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  messages          messages[]
+}
+
+model classrooms {
+  id              String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  institution_id  String?           @db.Uuid
+  course_id       String?           @db.Uuid
+  subject         String?           @db.VarChar(50)
+  period          Int?
+  created_at      DateTime          @default(now()) @db.Timestamptz(6)
+  chats           chats[]
+  courses         courses?          @relation(fields: [course_id], references: [id], onUpdate: NoAction)
+  institutions    institutions?     @relation(fields: [institution_id], references: [id], onUpdate: NoAction)
+  users_classroom users_classroom[]
+}
+
+model companies {
+  id            String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name          String          @db.VarChar(200)
+  website       String?
+  logo_url      String?
+  about         String?
+  headquarters  String?         @db.VarChar(150)
+  created_at    DateTime        @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime        @default(now()) @db.Timestamptz(6)
+  company_users company_users[]
+  jobs          jobs[]
+}
+
+model company_users {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  company_id String    @db.Uuid
+  user_id    String    @db.Uuid
+  role       String?   @db.VarChar(30)
+  created_at DateTime  @default(now()) @db.Timestamptz(6)
+  companies  companies @relation(fields: [company_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users      users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([company_id, user_id])
+}
+
+model courses {
+  id              String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name            String         @db.VarChar(150)
+  type            String?        @db.VarChar(20)
+  area            String?        @db.VarChar(80)
+  periods         Int?
+  schedule        schedule_enum?
+  created_at      DateTime       @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime       @default(now()) @db.Timestamptz(6)
+  period_duration Int?
+  classrooms      classrooms[]
+  projects        projects[]
+  user_courses    user_courses[]
+
+  @@unique([name, type])
+}
+
+model impressions {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  post_id        String   @db.Uuid
+  viewer_user_id String?  @db.Uuid
+  viewed_at      DateTime @default(now()) @db.Timestamptz(6)
+  dwell_ms       Int?
+  posts          posts    @relation(fields: [post_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users          users?   @relation(fields: [viewer_user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model institutions {
+  id             String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name           String         @db.VarChar(200)
+  type           String?        @db.VarChar(20)
+  code           String?        @db.VarChar(50)
+  active_courses Json?
+  created_at     DateTime       @default(now()) @db.Timestamptz(6)
+  updated_at     DateTime       @default(now()) @db.Timestamptz(6)
+  classrooms     classrooms[]
+  projects       projects[]
+  user_courses   user_courses[]
+}
+
+model job_applications {
+  id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  job_id                String    @db.Uuid
+  applicant_user_id     String    @db.Uuid
+  referenced_project_id String?   @db.Uuid
+  resume_url            String?
+  status                String?   @db.VarChar(20)
+  applied_at            DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime  @default(now()) @db.Timestamptz(6)
+  users                 users     @relation(fields: [applicant_user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  jobs                  jobs      @relation(fields: [job_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  projects              projects? @relation(fields: [referenced_project_id], references: [id], onUpdate: NoAction)
+}
+
+model jobs {
+  id               String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  company_id       String              @db.Uuid
+  title            String              @db.VarChar(200)
+  description_md   String?
+  location         String?             @db.VarChar(120)
+  work_type        job_work_type_enum?
+  seniority        job_seniority_enum?
+  status           String?             @db.VarChar(20)
+  created_at       DateTime            @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime            @default(now()) @db.Timestamptz(6)
+  job_applications job_applications[]
+  companies        companies           @relation(fields: [company_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([company_id], map: "idx_jobs_company")
+}
+
+model kanban {
+  id             String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  project_id     String?          @db.Uuid
+  name           String?          @db.VarChar(120)
+  created_at     DateTime         @default(now()) @db.Timestamptz(6)
+  tag            Json?
+  projects       projects?        @relation(fields: [project_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  kanban_columns kanban_columns[]
+}
+
+model kanban_columns {
+  id           String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  kanban_id    String         @db.Uuid
+  name         String?        @db.VarChar(120)
+  color        String?        @db.VarChar(30)
+  position     Int            @default(0)
+  kanban       kanban         @relation(fields: [kanban_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  kanban_tasks kanban_tasks[]
+}
+
+model kanban_tasks {
+  id             String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  column_id      String?         @db.Uuid
+  color          String?         @db.VarChar(30)
+  title          String?         @db.VarChar(120)
+  description    String?         @db.VarChar(400)
+  tags           Json?
+  created_at     DateTime        @default(now()) @db.Timestamptz(6)
+  created_by     String?         @db.Uuid
+  kanban_columns kanban_columns? @relation(fields: [column_id], references: [id], onUpdate: NoAction)
+  users          users?          @relation(fields: [created_by], references: [id], onUpdate: NoAction)
+  users_tasks    users_tasks[]
+
+  @@index([column_id], map: "idx_kanban_tasks_column")
+}
+
+model messages {
+  id                String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  chat_id           String              @db.Uuid
+  sender_id         String?             @db.Uuid
+  content_md        String?
+  created_at        DateTime            @default(now()) @db.Timestamptz(6)
+  chat_participants chat_participants[]
+  chats             chats               @relation(fields: [chat_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users             users?              @relation(fields: [sender_id], references: [id], onUpdate: NoAction)
+
+  @@index([chat_id, created_at(sort: Desc)], map: "idx_messages_chat_created")
+}
+
+model notifications {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id      String    @db.Uuid
+  type         String?   @db.VarChar(40)
+  payload_json Json?
+  read_at      DateTime? @db.Timestamptz(6)
+  created_at   DateTime  @default(now()) @db.Timestamptz(6)
+  users        users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model post_tags {
+  post_id String @db.Uuid
+  tag_id  String @db.Uuid
+  posts   posts  @relation(fields: [post_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  tags    tags   @relation(fields: [tag_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([post_id, tag_id])
+}
+
+model posts {
+  id            String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  project_id    String?          @db.Uuid
+  author_id     String?          @db.Uuid
+  content_md    String?
+  file_url      String?
+  file_type     String?          @db.VarChar(120)
+  visibility    visibility_enum? @default(public)
+  like_count    Int              @default(0)
+  comment_count Int              @default(0)
+  share_count   Int              @default(0)
+  created_at    DateTime         @default(now()) @db.Timestamptz(6)
+  updated_at    DateTime?        @db.Timestamptz(6)
+  impressions   impressions[]
+  post_tags     post_tags[]
+  users         users?           @relation(fields: [author_id], references: [id], onUpdate: NoAction)
+  projects      projects?        @relation(fields: [project_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([created_at], map: "idx_posts_created")
+  @@index([project_id, created_at(sort: Desc)], map: "idx_posts_project_created")
+}
+
+model project_members {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  project_id String   @db.Uuid
+  user_id    String   @db.Uuid
+  role       String?  @db.VarChar(30)
+  joined_at  DateTime @default(now()) @db.Timestamptz(6)
+  projects   projects @relation(fields: [project_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users      users    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([project_id, user_id])
+}
+
+model project_tags {
+  project_id String   @db.Uuid
+  tag_id     String   @db.Uuid
+  projects   projects @relation(fields: [project_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  tags       tags     @relation(fields: [tag_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([project_id, tag_id])
+}
+
+model projects {
+  id                   String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  institution_id       String?                @db.Uuid
+  course_id            String?                @db.Uuid
+  owner_user_id        String?                @db.Uuid
+  title                String                 @db.VarChar(200)
+  description          String?
+  visibility           visibility_enum?       @default(public)
+  status               project_status_enum?   @default(draft)
+  file_url             String?
+  file_type            String?                @db.VarChar(120)
+  created_at           DateTime               @default(now()) @db.Timestamptz(6)
+  updated_at           DateTime               @default(now()) @db.Timestamptz(6)
+  chats                chats[]
+  job_applications     job_applications[]
+  kanban               kanban[]
+  posts                posts[]
+  project_members      project_members[]
+  project_tags         project_tags[]
+  courses              courses?               @relation(fields: [course_id], references: [id], onUpdate: NoAction)
+  institutions         institutions?          @relation(fields: [institution_id], references: [id], onUpdate: NoAction)
+  users                users?                 @relation(fields: [owner_user_id], references: [id], onUpdate: NoAction)
+  user_follow_projects user_follow_projects[]
+
+  @@index([institution_id], map: "idx_projects_institution")
+  @@index([title], map: "idx_projects_title")
+}
+
+model tags {
+  id           String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name         String         @unique @db.VarChar(80)
+  post_tags    post_tags[]
+  project_tags project_tags[]
+}
+
+model user_courses {
+  id                String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id           String        @db.Uuid
+  course_id         String        @db.Uuid
+  institution_id    String?       @db.Uuid
+  current_period    Int?
+  enrollment_status String?       @db.VarChar(20)
+  created_at        DateTime      @default(now()) @db.Timestamptz(6)
+  courses           courses       @relation(fields: [course_id], references: [id], onUpdate: NoAction)
+  institutions      institutions? @relation(fields: [institution_id], references: [id], onUpdate: NoAction)
+  users             users         @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([user_id, course_id, institution_id])
+}
+
+model user_follow_projects {
+  user_id    String   @db.Uuid
+  project_id String   @db.Uuid
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  projects   projects @relation(fields: [project_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users      users    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([user_id, project_id])
+}
+
+model user_follow_users {
+  follower_id                                String   @db.Uuid
+  followed_id                                String   @db.Uuid
+  created_at                                 DateTime @default(now()) @db.Timestamptz(6)
+  users_user_follow_users_followed_idTousers users    @relation("user_follow_users_followed_idTousers", fields: [followed_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users_user_follow_users_follower_idTousers users    @relation("user_follow_users_follower_idTousers", fields: [follower_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([follower_id, followed_id])
+  @@index([followed_id], map: "idx_user_follow_users_followed")
+}
+
+model users {
+  id                                                     String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  full_name                                              String                 @db.VarChar(200)
+  email                                                  String?                @unique @db.Citext
+  password_hash                                          String?
+  role                                                   user_role_enum         @default(student)
+  avatar_url                                             String?
+  bio                                                    String?
+  is_active                                              Boolean                @default(true)
+  followers_count                                        Int                    @default(0)
+  following_count                                        Int                    @default(0)
+  last_login_at                                          DateTime?              @db.Timestamptz(6)
+  created_at                                             DateTime               @default(now()) @db.Timestamptz(6)
+  updated_at                                             DateTime               @default(now()) @db.Timestamptz(6)
+  audit_logs                                             audit_logs[]
+  chat_participants                                      chat_participants[]
+  company_users                                          company_users[]
+  impressions                                            impressions[]
+  job_applications                                       job_applications[]
+  kanban_tasks                                           kanban_tasks[]
+  messages                                               messages[]
+  notifications                                          notifications[]
+  posts                                                  posts[]
+  project_members                                        project_members[]
+  projects                                               projects[]
+  user_courses                                           user_courses[]
+  user_follow_projects                                   user_follow_projects[]
+  user_follow_users_user_follow_users_followed_idTousers user_follow_users[]    @relation("user_follow_users_followed_idTousers")
+  user_follow_users_user_follow_users_follower_idTousers user_follow_users[]    @relation("user_follow_users_follower_idTousers")
+  users_classroom                                        users_classroom[]
+  users_tasks                                            users_tasks[]
+
+  @@index([email], map: "idx_users_email")
+  @@index([full_name], map: "idx_users_fullname")
+}
+
+model users_classroom {
+  id           String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  classroom_id String     @db.Uuid
+  user_id      String     @db.Uuid
+  role         String?    @db.VarChar(20)
+  enrolled_at  DateTime   @default(now()) @db.Timestamptz(6)
+  classrooms   classrooms @relation(fields: [classroom_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users        users      @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([classroom_id, user_id])
+}
+
+model users_tasks {
+  user_id      String       @db.Uuid
+  task_id      String       @db.Uuid
+  assigned_at  DateTime     @default(now()) @db.Timestamptz(6)
+  kanban_tasks kanban_tasks @relation(fields: [task_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users        users        @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([user_id, task_id])
+}
+
+enum chat_participant_role_enum {
+  membro
+  lider
+  colider
+}
+
+enum chat_scope_enum {
+  direct
+  project
+  classroom
+}
+
+enum job_seniority_enum {
+  intern
+  jr
+  pl
+  sr
+}
+
+enum job_work_type_enum {
+  on_site @map("on-site")
+  hybrid
+  remote
+}
+
+enum project_status_enum {
+  draft
+  active
+  archived
+}
+
+enum schedule_enum {
+  manha
+  tarde
+  noite
+  integral
+  ead
+}
+
+enum task_status_enum {
+  todo
+  doing
+  done
+}
+
+enum user_role_enum {
+  student
+  teacher
+  staff
+  company_admin
+  super_admin
+}
+
+enum visibility_enum {
+  public
+  internal
+  private
+}

@@ -1,22 +1,10 @@
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
-import { ConfigModule } from '@nestjs/config';
-import { ThrottlerModule } from '@nestjs/throttler';
+import { PostService } from './post.service';
+import { PrismaService } from './database/prisma.service';
+import { PostController } from './post.controller';
 
 @Module({
-  imports: [
-    ConfigModule.forRoot(),
-    ThrottlerModule.forRoot({
-      throttlers: [
-        {
-          ttl: 60000,
-          limit: 10,
-        },
-      ],
-    }),
-  ],
-  controllers: [AppController],
-  providers: [AppService],
+  controllers: [PostController],
+  providers: [PrismaService, PostService],
 })
-export class AppModule {}
+export class PostModule {}
