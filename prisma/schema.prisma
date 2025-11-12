@@ -237,6 +237,7 @@ model posts {
   post_tags     post_tags[]
   users         users?           @relation(fields: [author_id], references: [id], onUpdate: NoAction)
   projects      projects?        @relation(fields: [project_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  user_likes    user_likes[]     @relation("PostLikes")
 
   @@index([created_at], map: "idx_posts_created")
   @@index([project_id, created_at(sort: Desc)], map: "idx_posts_project_created")
@@ -348,7 +349,7 @@ model users {
   last_login_at                                          DateTime?              @db.Timestamptz(6)
   created_at                                             DateTime               @default(now()) @db.Timestamptz(6)
   updated_at                                             DateTime               @default(now()) @db.Timestamptz(6)
-  verification_code                                      Int?                   @db.SmallInt
+  verification_code                                      Int?                   @db.Integer
   verification_code_created_at                           DateTime?              @db.Timestamp(6)
   audit_logs                                             audit_logs[]
   chat_participants                                      chat_participants[]
@@ -367,6 +368,7 @@ model users {
   user_follow_users_user_follow_users_follower_idTousers user_follow_users[]    @relation("user_follow_users_follower_idTousers")
   users_classroom                                        users_classroom[]
   users_tasks                                            users_tasks[]
+  user_likes                                             user_likes[]
 
   @@index([email], map: "idx_users_email")
   @@index([name], map: "idx_users_fullname")
@@ -392,6 +394,24 @@ model users_tasks {
   users        users        @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@id([user_id, task_id])
+}
+
+model user_likes {
+  id          String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id     String                @db.Uuid
+  target_id   String                @db.Uuid
+  target_type like_target_type_enum
+  created_at  DateTime              @default(now()) @db.Timestamptz(6)
+  user        users                 @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  post        posts?                @relation("PostLikes", fields: [target_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([user_id, target_id])
+  @@index([target_id, target_type])
+}
+
+enum like_target_type_enum {
+  post
+  comment
 }
 
 enum chat_participant_role_enum {

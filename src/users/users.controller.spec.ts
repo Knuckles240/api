@@ -68,7 +68,7 @@ describe('UsersController', () => {
       const result = await controller.findOne(mockRequest);
 
       expect(service.findOne).toHaveBeenCalledWith(mockUserId);
-      expect(result.user).toEqual(mockUser);
+      expect(result).toEqual(mockUser);
     });
   });
 

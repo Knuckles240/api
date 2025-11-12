@@ -17,13 +17,12 @@ export class AuthService {
     const { accessToken } = await this.getTokens(user.id, user.email);
 
     return {
-      message: 'Cadastro bem-sucedido!',
       accessToken,
     };
   }
 
   async login(data: AuthDto) {
-    const { user } = await this.usersService.findOne(undefined, data.email);
+    const user = await this.usersService.findOne(undefined, data.email);
     if (!user) throw new BadRequestException('Algo deu errado ao logar!');
 
     const passwordMatch = await bcrypt.compare(data.password, user.password);
@@ -38,11 +37,11 @@ export class AuthService {
     });
 
     const { accessToken } = await this.getTokens(user.id, user.email);
-    return { message: 'Login bem-sucedido!', accessToken };
+    return { accessToken };
   }
 
   async verify(id: string, data: VerifyDTO) {
-    const { user } = await this.usersService.findOne(id);
+    const user = await this.usersService.findOne(id);
     if (!user) throw new BadRequestException('Algo deu errado ao verificar!');
 
     if (!data.verification_code || user.verification_code !== data.verification_code) {
@@ -66,7 +65,7 @@ export class AuthService {
     });
 
     const { accessToken, refreshToken } = await this.getTokens(user.id, user.email);
-    return { message: 'Login bem-sucedido!', accessToken, refreshToken };
+    return { accessToken, refreshToken };
   }
 
   async hashData(data: string) {
@@ -104,16 +103,15 @@ export class AuthService {
   }
 
   async refreshTokens(id: string) {
-    const { user } = await this.usersService.findOne(id);
+    const user = await this.usersService.findOne(id);
     if (!user) throw new BadRequestException('Nenhum usuário encontrado!');
 
-    const tokens = await this.getTokens(user.id, user.email);
     const { accessToken, refreshToken } = await this.getTokens(user.id, user.email);
-    return { message: 'Token regerado!', accessToken, refreshToken };
+    return { accessToken, refreshToken };
   }
   
   async logout(id: string) {
-    const { user } = await this.usersService.findOne(id);
+    const user = await this.usersService.findOne(id);
     if (!user) throw new BadRequestException('Algo deu errado ao deslogar!');
     
     return true;

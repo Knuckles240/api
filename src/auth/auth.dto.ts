@@ -1,8 +1,10 @@
-import { IsAlpha, IsEmail, IsInt, IsNotEmpty, IsString, IsStrongPassword, Length, Max, Min } from 'class-validator';
+import { IsEmail, IsInt, IsNotEmpty, IsString, IsStrongPassword, Length, Matches, Max, Min } from 'class-validator';
 
 export class SignUpDTO {
   @IsNotEmpty({ message: 'Nome não pode ser vazio.' })
-  @IsAlpha(undefined, { message: 'Nome não é um texto válido.' })
+  @Matches(/^[a-zA-ZÀ-ÿ\s']+$/, {
+    message: 'Nome deve conter apenas letras, espaços e apóstrofos.',
+  })
   @Length(3, 100, { message: 'Nome precisa ter entre 3 e 100 caracteres.' })
   name: string;
 

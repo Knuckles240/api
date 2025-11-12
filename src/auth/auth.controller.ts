@@ -1,6 +1,5 @@
 import { Body, Controller, Delete, Get, HttpStatus, NotFoundException, Param, Patch, Post, Req, Res, UseGuards } from '@nestjs/common';
 import { AuthDto, SignUpDTO, VerifyDTO } from './auth.dto';
-import { UsersService } from '../users/users.service';
 import { AuthService } from './auth.service';
 import { AccessTokenGuard } from 'src/common/guards/accessToken.guard';
 import { RefreshTokenGuard } from 'src/common/guards/refreshToken.guard';
@@ -22,7 +21,7 @@ export class AuthController {
   @UseGuards(AccessTokenGuard)
   @Post('verify')
   async verify(@Body() body: VerifyDTO, @Res({ passthrough: true }) res, @Req() req) {
-    const { message, accessToken, refreshToken } = await this.authService.verify(req.user['id'], body);
+    const { accessToken, refreshToken } = await this.authService.verify(req.user['id'], body);
 
     res
       .cookie(process.env.ACCESS_TOKEN, accessToken, {
@@ -35,11 +34,8 @@ export class AuthController {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'Lax',
-      });
-
-    return {
-      message,
-    };
+      })
+      .status(200);
   }
 
   @UseGuards(AccessTokenGuard)
@@ -47,8 +43,7 @@ export class AuthController {
   async logout(@Res({ passthrough: true }) res, @Req() req) {
     await this.authService.logout(req.user['id']);
 
-    res.clearCookie(process.env.REFRESH_TOKEN).clearCookie(process.env.ACCESS_TOKEN);
-    return { message: 'Deslogado com sucesso!' };
+    res.clearCookie(process.env.REFRESH_TOKEN).clearCookie(process.env.ACCESS_TOKEN).status(200);
   }
 
   @UseGuards(RefreshTokenGuard)
@@ -66,6 +61,7 @@ export class AuthController {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'Lax',
-      });
+      })
+      .status(200);
   }
 }

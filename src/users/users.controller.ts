@@ -22,4 +22,10 @@ export class UsersController {
   async remove(@Req() req) {
     return await this.usersService.remove(req.user['id']);
   }
+
+  @UseGuards(AccessTokenGuard)
+  @Get('me/likes')
+  async findMyLikes(@Req() req) {
+    return await this.usersService.findMyLikes(req.user['id']);
+  }
 }

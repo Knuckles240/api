@@ -6,6 +6,7 @@ import { SignUpDTO } from 'src/auth/auth.dto';
 
 @Injectable()
 export class UsersService {
+  static findMyLikes: any;
   constructor(private readonly prismaService: PrismaService) {}
 
   async signup(data: SignUpDTO) {
@@ -13,7 +14,7 @@ export class UsersService {
       where: { email: data.email },
     });
     if (userAlreadyExists) {
-      throw new ConflictException('Usuário já existe.');
+      throw new ConflictException('Email já utilizado.');
     }
 
     const salt = await bcrypt.genSalt(12);
@@ -43,7 +44,7 @@ export class UsersService {
       throw new NotFoundException('Usuário não encontrado!');
     }
 
-    return { message: 'Usuário encontrado!', user };
+    return user;
   }
 
   async findAll() {
@@ -53,7 +54,7 @@ export class UsersService {
     }
 
     const safeUsers = users.map(({ password, ...user }) => user);
-    return { message: 'Usuários encontrados!', users: safeUsers };
+    return safeUsers;
   }
 
   async update(id: string, data: UpdateDto) {
@@ -62,7 +63,7 @@ export class UsersService {
         where: { id },
         data,
       });
-      return { message: 'Edição bem-sucedida!', user };
+      return { user };
     } catch {
       throw new NotFoundException('Algo deu errado ao editar o usuário!');
     }
@@ -77,5 +78,35 @@ export class UsersService {
     } catch {
       throw new NotFoundException('Algo deu errado ao excluir o usuário!');
     }
+  }
+
+  async findMyLikes(userId: string) {
+    const likedPostsRelations = await this.prismaService.user_likes.findMany({
+      where: {
+        user_id: userId,
+      },
+      include: {
+        post: {
+          include: {
+            users: {
+              select: {
+                name: true,
+                avatar_url: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        created_at: 'desc',
+      },
+    });
+
+    if (likedPostsRelations.length === 0) {
+      throw new NotFoundException('Nenhum post curtido encontrado.');
+    }
+
+    const posts = likedPostsRelations.map((like) => like.post);
+    return { posts };
   }
 }

@@ -1,8 +1,4 @@
-import {
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/database/prisma.service';
 import { AddMemberDto, CreateProjectDto, UpdateProjectDto } from './projects.dto';
 
@@ -14,11 +10,7 @@ export class ProjectsService {
    * Helper para checar se um usuário tem permissão para editar/gerenciar um projeto.
    * Por enquanto, apenas 'lider' ou o dono original.
    */
-  private async checkProjectPermission(
-    projectId: string,
-    userId: string,
-    allowedRoles: string[] = ['lider'],
-  ) {
+  private async checkProjectPermission(projectId: string, userId: string, allowedRoles: string[] = ['lider']) {
     const project = await this.prismaService.projects.findUnique({
       where: { id: projectId },
       select: { owner_user_id: true },
@@ -47,9 +39,7 @@ export class ProjectsService {
       return true;
     }
 
-    throw new ForbiddenException(
-      'Você não tem permissão para executar esta ação.',
-    );
+    throw new ForbiddenException('Você não tem permissão para executar esta ação.');
   }
 
   /**
@@ -68,9 +58,7 @@ export class ProjectsService {
         data: {
           ...projectData,
           users: { connect: { id: ownerId } }, // CONECTA O DONO (owner_user_id)
-          institutions: institution_id
-            ? { connect: { id: institution_id } }
-            : undefined,
+          institutions: institution_id ? { connect: { id: institution_id } } : undefined,
           courses: course_id ? { connect: { id: course_id } } : undefined,
           project_tags: tag_ids
             ? {
@@ -126,7 +114,7 @@ export class ProjectsService {
       where: { id: projectId },
       include: {
         project_tags: { include: { tags: true } },
-        project_members: { include: { users: { select: { id: true, name: true, avatar_url: true } } } },
+        project_members: { include: { users: { select: { name: true, avatar_url: true } } } },
         courses: true,
         institutions: true,
       },
@@ -142,9 +130,7 @@ export class ProjectsService {
     }
 
     // Se for privado ou interno, checa se o usuário é membro
-    const isMember = project.project_members.some(
-      (member) => member.user_id === userId,
-    );
+    const isMember = project.project_members.some((member) => member.user_id === userId);
 
     if (isMember) {
       return project;
@@ -209,19 +195,6 @@ export class ProjectsService {
   async addMember(projectId: string, data: AddMemberDto, actorId: string) {
     await this.checkProjectPermission(projectId, actorId, ['lider']);
 
-    const existingMember = await this.prismaService.project_members.findUnique({
-      where: {
-        project_id_user_id: {
-          project_id: projectId,
-          user_id: data.user_id,
-        },
-      },
-    });
-
-    if (existingMember) {
-      throw new ForbiddenException('Usuário já é membro deste projeto.');
-    }
-
     return this.prismaService.project_members.create({
       data: {
         project_id: projectId,
@@ -232,21 +205,51 @@ export class ProjectsService {
   }
 
   async removeMember(projectId: string, memberUserId: string, actorId: string) {
-    // Caso 1: Usuário tentando sair do projeto
+    // Busca o projeto e o membro que está tentando sair
+    const [project, actorMembership] = await Promise.all([
+      this.prismaService.projects.findUnique({
+        where: { id: projectId },
+        select: { owner_user_id: true },
+      }),
+      this.prismaService.project_members.findUnique({
+        where: {
+          project_id_user_id: { project_id: projectId, user_id: actorId },
+        },
+        select: { role: true },
+      }),
+    ]);
+
+    if (!project) {
+      throw new NotFoundException('Projeto não encontrado.');
+    }
+
+    // Caso 1: Usuário tentando sair do projeto (actorId === memberUserId)
     if (actorId === memberUserId) {
-      // TODO: Adicionar lógica para impedir que o último 'lider' ou o dono saia
+      // REGRA 1: O DONO não pode sair do próprio projeto.
+      if (project.owner_user_id === actorId) {
+        throw new ForbiddenException('O dono não pode sair do projeto. Você pode apenas apagar o projeto.');
+      }
+
+      // REGRA 2: Um LÍDER não pode sair do projeto (deve ser rebaixado ou outro líder promovido)
+      if (actorMembership?.role === 'lider') {
+        throw new ForbiddenException('Líderes não podem sair do projeto. Peça para outro líder rebaixar sua permissão primeiro.');
+      }
+
+      // Se for um membro comum, pode sair.
       return this.prismaService.project_members.delete({
         where: {
-          project_id_user_id: {
-            project_id: projectId,
-            user_id: actorId,
-          },
+          project_id_user_id: { project_id: projectId, user_id: actorId },
         },
       });
     }
 
-    // Caso 2: 'Lider' removendo outro membro
+    // Caso 2: 'Lider' ou DONO removendo outro membro
     await this.checkProjectPermission(projectId, actorId, ['lider']);
+
+    // REGRA 3: Ninguém pode remover o dono original, exceto o próprio dono (que é pego no Caso 1)
+    if (project.owner_user_id === memberUserId) {
+      throw new ForbiddenException('Você não pode remover o dono do projeto.');
+    }
 
     return this.prismaService.project_members.delete({
       where: {
