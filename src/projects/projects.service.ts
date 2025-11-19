@@ -10,7 +10,7 @@ export class ProjectsService {
    * Helper para checar se um usuário tem permissão para editar/gerenciar um projeto.
    * Por enquanto, apenas 'lider' ou o dono original.
    */
-  private async checkProjectPermission(projectId: string, userId: string, allowedRoles: string[] = ['lider']) {
+  public async checkProjectPermission(projectId: string, userId: string, allowedRoles: string[] = ['lider']) {
     const project = await this.prismaService.projects.findUnique({
       where: { id: projectId },
       select: { owner_user_id: true },

@@ -179,10 +179,11 @@ model kanban_tasks {
   title          String?         @db.VarChar(120)
   description    String?         @db.VarChar(400)
   tags           Json?
+  position       Int             @default(0) // ADICIONADO
   created_at     DateTime        @default(now()) @db.Timestamptz(6)
   created_by     String?         @db.Uuid
-  kanban_columns kanban_columns? @relation(fields: [column_id], references: [id], onUpdate: NoAction)
-  users          users?          @relation(fields: [created_by], references: [id], onUpdate: NoAction)
+  kanban_columns kanban_columns? @relation(fields: [column_id], references: [id], onDelete: Cascade, onUpdate: NoAction) // CORRIGIDO
+  users          users?          @relation(fields: [created_by], references: [id], onDelete: SetNull, onUpdate: NoAction) // Trocado para SetNull
   users_tasks    users_tasks[]
 
   @@index([column_id], map: "idx_kanban_tasks_column")
@@ -196,7 +197,7 @@ model messages {
   created_at        DateTime            @default(now()) @db.Timestamptz(6)
   chat_participants chat_participants[]
   chats             chats               @relation(fields: [chat_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  users             users?              @relation(fields: [sender_id], references: [id], onUpdate: NoAction)
+  users             users?              @relation(fields: [sender_id], references: [id], onDelete: SetNull, onUpdate: NoAction) // Trocado para SetNull
 
   @@index([chat_id, created_at(sort: Desc)], map: "idx_messages_chat_created")
 }
@@ -235,7 +236,7 @@ model posts {
   updated_at    DateTime?        @db.Timestamptz(6)
   impressions   impressions[]
   post_tags     post_tags[]
-  users         users?           @relation(fields: [author_id], references: [id], onUpdate: NoAction)
+  users         users?           @relation(fields: [author_id], references: [id], onDelete: SetNull, onUpdate: NoAction) // Trocado para SetNull
   projects      projects?        @relation(fields: [project_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   user_likes    user_likes[]     @relation("PostLikes")
 
@@ -283,9 +284,9 @@ model projects {
   posts                posts[]
   project_members      project_members[]
   project_tags         project_tags[]
-  courses              courses?               @relation(fields: [course_id], references: [id], onUpdate: NoAction)
-  institutions         institutions?          @relation(fields: [institution_id], references: [id], onUpdate: NoAction)
-  users                users?                 @relation(fields: [owner_user_id], references: [id], onUpdate: NoAction)
+  courses              courses?               @relation(fields: [course_id], references: [id], onDelete: SetNull, onUpdate: NoAction) // Trocado para SetNull
+  institutions         institutions?          @relation(fields: [institution_id], references: [id], onDelete: SetNull, onUpdate: NoAction) // Trocado para SetNull
+  users                users?                 @relation(fields: [owner_user_id], references: [id], onDelete: SetNull, onUpdate: NoAction) // Trocado para SetNull
   user_follow_projects user_follow_projects[]
 
   @@index([institution_id], map: "idx_projects_institution")

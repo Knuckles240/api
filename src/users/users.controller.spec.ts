@@ -60,10 +60,7 @@ describe('UsersController', () => {
 
   describe('findOne (GET /users/me)', () => {
     it('should return the authenticated user', async () => {
-      mockUsersService.findOne.mockResolvedValue({
-        message: 'Usuário encontrado!',
-        user: mockUser,
-      });
+      mockUsersService.findOne.mockResolvedValue(mockUser);
 
       const result = await controller.findOne(mockRequest);
 
