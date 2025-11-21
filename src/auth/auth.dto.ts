@@ -1,4 +1,4 @@
-import { IsEmail, IsInt, IsNotEmpty, IsString, IsStrongPassword, Length, Matches, Max, Min } from 'class-validator';
+import { IsEmail, IsInt, IsNotEmpty, IsString, IsStrongPassword, Length, Matches, Max, Min,IsUrl, IsOptional } from 'class-validator';
 
 export class SignUpDTO {
   @IsNotEmpty({ message: 'Nome não pode ser vazio.' })
@@ -27,6 +27,42 @@ export class SignUpDTO {
   password: string;
 }
 
+
+
+// ... (Mantenha SignUpDTO, AuthDto, VerifyDTO como estavam) ...
+
+export class SignUpCompanyDto {
+  // --- Responsável ---
+  @IsNotEmpty({ message: 'Nome do responsável é obrigatório.' })
+  @Length(3, 100)
+  user_name: string;
+
+  @IsEmail({}, { message: 'Email inválido.' })
+  user_email: string;
+
+  @IsStrongPassword(
+    { minLength: 8, minLowercase: 1, minNumbers: 1, minSymbols: 1, minUppercase: 1 },
+    { message: 'Senha fraca.' }
+  )
+  user_password: string;
+
+  // --- Empresa ---
+  @IsNotEmpty({ message: 'Nome da empresa é obrigatório.' })
+  @Length(2, 200)
+  company_name: string;
+
+  @IsString()
+  @IsNotEmpty({ message: 'CNPJ é obrigatório.' })
+  cnpj: string;
+
+  @IsUrl({}, { message: 'Site inválido.' })
+  @IsOptional()
+  website?: string;
+
+  @IsString()
+  @IsOptional()
+  headquarters?: string;
+}
 export class AuthDto {
   @IsNotEmpty({ message: 'Email não pode ser vazio.' })
   @IsString({ message: 'Email não é um texto válido.' })

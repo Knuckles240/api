@@ -3,6 +3,7 @@ import { AuthDto, SignUpDTO, VerifyDTO } from './auth.dto';
 import { AuthService } from './auth.service';
 import { AccessTokenGuard } from 'src/common/guards/accessToken.guard';
 import { RefreshTokenGuard } from 'src/common/guards/refreshToken.guard';
+import { SignUpCompanyDto } from './auth.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -36,6 +37,11 @@ export class AuthController {
         sameSite: 'Lax',
       })
       .status(200);
+  }
+
+  @Post('signup/company')
+  async signupCompany(@Body() body: SignUpCompanyDto) {
+    return await this.authService.signupCompany(body);
   }
 
   @UseGuards(AccessTokenGuard)
