@@ -14,7 +14,7 @@ import { PrismaService } from 'src/database/prisma.service'; // 1. Importar
     AuthService, 
     AccessTokenStrategy, 
     RefreshTokenStrategy, 
-    PrismaService // 2. Adicionar aos providers
+    PrismaService 
   ],
 })
 export class AuthModule {}

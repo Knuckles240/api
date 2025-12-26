@@ -7,8 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// --- MODELS ---
-
 model audit_logs {
   id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   actor_user_id String?  @db.Uuid

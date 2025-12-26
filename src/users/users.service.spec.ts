@@ -66,7 +66,7 @@ describe('UsersService', () => {
     const signUpDto: SignUpDTO = {
       name: 'Test User',
       email: 'test@example.com',
-      password: 'password123',
+      password: 'Mateus-2409',
     };
 
     it('should create a new user successfully', async () => {
