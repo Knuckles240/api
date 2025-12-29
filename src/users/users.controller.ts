@@ -15,6 +15,7 @@ export class UsersController {
   async findOne(@Req() req) {
     return await this.usersService.findOne(req.user['id']);
   }
+  
   @UseGuards(AccessTokenGuard)
   @Patch('me')
   @ApiOperation({ summary: 'Edita informações do meu usuário.' })

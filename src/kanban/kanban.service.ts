@@ -16,7 +16,7 @@ import {
 export class KanbanService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly projectsService: ProjectsService, 
+    private readonly projectsService: ProjectsService,
   ) {}
 
   /**
@@ -243,13 +243,10 @@ export class KanbanService {
     const projectId = await this.getProjectIdFromTask(taskId);
     // 1. Verifica se o ator (quem assigna) é membro
     await this.projectsService.checkProjectPermission(projectId, actorId, ['lider', 'membro']);
-    
+
     // 2. Verifica se o usuário (quem é assignado) também é membro
-    try {
-      await this.projectsService.checkProjectPermission(projectId, dto.user_id, ['lider', 'membro']);
-    } catch (error) {
-      throw new ForbiddenException('Não é possível assignar um usuário que não é membro do projeto.');
-    }
+    const permission = await this.projectsService.checkProjectPermission(projectId, dto.user_id, ['lider', 'membro']);
+    if (!permission) throw new ForbiddenException('Não é possível assignar um usuário que não é membro do projeto.');
 
     return this.prisma.users_tasks.create({
       data: {

@@ -1,19 +1,6 @@
 import { user_role_enum } from '@prisma/client';
 import { Type } from 'class-transformer';
-import {
-  IsBoolean,
-  IsDate,
-  IsEmail,
-  IsInt,
-  IsNotEmpty,
-  IsOptional,
-  IsString,
-  IsUrl,
-  Length,
-  Matches,
-  Max,
-  Min,
-} from 'class-validator';
+import { IsBoolean, IsDate, IsEmail, IsInt, IsOptional, IsString, IsUrl, Length, Matches, Max, Min } from 'class-validator';
 
 export class UpdateDto {
   @IsOptional()

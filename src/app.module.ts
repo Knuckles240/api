@@ -7,6 +7,6 @@ import { KanbanModule } from './kanban/kanban.module';
 import { CompaniesModule } from './companies/companies.module';
 
 @Module({
-  imports: [UsersModule, AuthModule, ProjectsModule, PostsModule, KanbanModule,CompaniesModule],
+  imports: [UsersModule, AuthModule, ProjectsModule, PostsModule, KanbanModule, CompaniesModule],
 })
 export class AppModule {}

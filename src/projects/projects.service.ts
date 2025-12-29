@@ -153,17 +153,13 @@ export class ProjectsService {
     // A atualização de tags/membros é feita por rotas específicas.
     const { tag_ids, ...updateData } = data; // Ignora tag_ids por enquanto
 
-    try {
-      return await this.prismaService.projects.update({
-        where: { id: projectId },
-        data: {
-          ...updateData,
-          updated_at: new Date(), // Força a atualização do timestamp
-        },
-      });
-    } catch (error) {
-      throw new NotFoundException('Erro ao atualizar projeto.');
-    }
+    return await this.prismaService.projects.update({
+      where: { id: projectId },
+      data: {
+        ...updateData,
+        updated_at: new Date(), // Força a atualização do timestamp
+      },
+    });
   }
 
   /**

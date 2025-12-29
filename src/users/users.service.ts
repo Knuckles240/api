@@ -26,7 +26,12 @@ export class UsersService {
       verification_code_created_at: new Date(),
     };
 
-    const { password, ...user } = await this.prismaService.users.create({ data: newUser });
+    const user = await this.prismaService.users.create({
+      data: newUser,
+      omit: {
+        password: true,
+      },
+    });
 
     return user;
   }
@@ -37,8 +42,18 @@ export class UsersService {
     }
 
     const user = id
-      ? await this.prismaService.users.findUnique({ where: { id } })
-      : await this.prismaService.users.findUnique({ where: { email } });
+      ? await this.prismaService.users.findUnique({
+          where: { id },
+          omit: {
+            password: true,
+          },
+        })
+      : await this.prismaService.users.findUnique({
+          where: { email },
+          omit: {
+            password: true,
+          },
+        });
 
     if (!user) {
       throw new NotFoundException('Usuário não encontrado!');
@@ -48,36 +63,33 @@ export class UsersService {
   }
 
   async findAll() {
-    const users = await this.prismaService.users.findMany();
+    const users = await this.prismaService.users.findMany({
+      omit: {
+        password: true,
+      },
+    });
     if (users.length === 0) {
       throw new NotFoundException('Nenhum usuário encontrado!');
     }
-
-    const safeUsers = users.map(({ password, ...user }) => user);
-    return safeUsers;
+    return users;
   }
 
   async update(id: string, data: UpdateDto) {
-    try {
-      const { password, ...user } = await this.prismaService.users.update({
-        where: { id },
-        data,
-      });
-      return { user };
-    } catch {
-      throw new NotFoundException('Algo deu errado ao editar o usuário!');
-    }
+    const user = await this.prismaService.users.update({
+      where: { id },
+      omit: {
+        password: true,
+      },
+      data,
+    });
+    return { user };
   }
 
   async remove(id: string) {
-    try {
-      await this.prismaService.users.delete({
-        where: { id },
-      });
-      return { message: 'Exclusão bem-sucedida!' };
-    } catch {
-      throw new NotFoundException('Algo deu errado ao excluir o usuário!');
-    }
+    await this.prismaService.users.delete({
+      where: { id },
+    });
+    return { message: 'Exclusão bem-sucedida!' };
   }
 
   async findMyLikes(userId: string) {
