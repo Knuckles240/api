@@ -1,6 +1,6 @@
 import { BadRequestException, ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { UsersService } from 'src/users/users.service';
-import { PrismaService } from 'src/database/prisma.service'; 
+import { PrismaService } from 'src/database/prisma.service';
 import bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { AuthDto, SignUpDTO, VerifyDTO, SignUpCompanyDto } from './auth.dto';
@@ -22,20 +22,15 @@ export class AuthService {
   }
 
   async login(data: AuthDto) {
-    const user = await this.usersService.findOne(undefined, data.email);
-    if (!user) throw new BadRequestException('Algo deu errado ao logar!');
+    const user = await this.usersService.findForAuth(data.email);
+    if (!user || !user.is_active) {
+      throw new UnauthorizedException('Credenciais inválidas.');
+    }
 
     const passwordMatch = await bcrypt.compare(data.password, user.password);
     if (!passwordMatch) {
       throw new UnauthorizedException('Credenciais inválidas.');
     }
-
-    // Gera código (opcional no fluxo normal, mas mantido conforme seu código original)
-    const verification_code = Math.floor(100000 + Math.random() * 900000);
-    await this.usersService.update(user.id, {
-      verification_code,
-      verification_code_created_at: new Date(),
-    });
 
     const { accessToken } = await this.getTokens(user.id, user.email);
     return { accessToken };
@@ -76,14 +71,8 @@ export class AuthService {
 
   async getTokens(id: string, email: string) {
     const [accessToken, refreshToken] = await Promise.all([
-      this.jwtService.signAsync(
-        { id, email },
-        { secret: jwtConstants.access_token_secret, expiresIn: '30m' },
-      ),
-      this.jwtService.signAsync(
-        { id, email },
-        { secret: jwtConstants.refresh_token_secret },
-      ),
+      this.jwtService.signAsync({ id, email }, { secret: jwtConstants.access_token_secret, expiresIn: '30m' }),
+      this.jwtService.signAsync({ id, email }, { secret: jwtConstants.refresh_token_secret }),
     ]);
 
     return { accessToken, refreshToken };
@@ -96,12 +85,12 @@ export class AuthService {
     const { accessToken, refreshToken } = await this.getTokens(user.id, user.email);
     return { accessToken, refreshToken };
   }
-  
+
   async logout(id: string) {
     const user = await this.usersService.findOne(id);
     if (!user) throw new BadRequestException('Algo deu errado ao deslogar!');
     return true;
-  }  
+  }
 
   // --- CADASTRO CORPORATIVO ---
   async signupCompany(data: SignUpCompanyDto) {

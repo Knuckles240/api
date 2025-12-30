@@ -36,6 +36,19 @@ export class UsersService {
     return user;
   }
 
+  async findForAuth(email: string) {
+    return this.prismaService.users.findUnique({
+      where: { email },
+      select: {
+        id: true,
+        email: true,
+        password: true, 
+        role: true,
+        is_active: true,
+      },
+    });
+  }
+
   async findOne(id?: string, email?: string) {
     if (!id && !email) {
       throw new BadRequestException('Informe o id ou email do usuário.');
