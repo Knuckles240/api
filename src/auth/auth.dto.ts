@@ -28,11 +28,7 @@ export class SignUpDTO {
 }
 
 
-
-// ... (Mantenha SignUpDTO, AuthDto, VerifyDTO como estavam) ...
-
 export class SignUpCompanyDto {
-  // --- Responsável ---
   @IsNotEmpty({ message: 'Nome do responsável é obrigatório.' })
   @Length(3, 100)
   user_name: string;
@@ -46,7 +42,6 @@ export class SignUpCompanyDto {
   )
   user_password: string;
 
-  // --- Empresa ---
   @IsNotEmpty({ message: 'Nome da empresa é obrigatório.' })
   @Length(2, 200)
   company_name: string;

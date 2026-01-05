@@ -16,9 +16,6 @@ export class UpdateDto {
   email?: string;
 
   @IsOptional()
-  role?: user_role_enum | { set: user_role_enum };
-
-  @IsOptional()
   @IsUrl({}, { message: 'Link do avatar é inválido.' })
   avatar_url?: string;
 
@@ -29,14 +26,6 @@ export class UpdateDto {
   @IsOptional()
   @IsBoolean({ message: 'is_active deve ser booleano' })
   is_active?: boolean;
-
-  @IsOptional()
-  @IsInt({ message: 'O contador de seguidor deve ser um número' })
-  followers_count?: number;
-
-  @IsOptional()
-  @IsInt({ message: 'O contador de seguindo deve ser um número' })
-  following_count?: number;
 
   @IsOptional()
   @IsInt({ message: 'Código de verificação tem que ser um número inteiro' })

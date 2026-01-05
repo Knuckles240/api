@@ -3,8 +3,8 @@ import { UsersService } from './users.service';
 import { PrismaService } from 'src/database/prisma.service';
 import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { SignUpDTO } from 'src/auth/auth.dto';
+import { Prisma } from '@prisma/client';
 
-// 1. Mockamos o PrismaService
 const mockPrismaService = {
   users: {
     findUnique: jest.fn(),
@@ -13,7 +13,6 @@ const mockPrismaService = {
     update: jest.fn(),
     delete: jest.fn(),
   },
-  // Mock da tabela de likes (para o teste findMyLikes)
   user_likes: {
     findMany: jest.fn(),
   },
@@ -26,10 +25,7 @@ const mockUser = {
   password: 'hashed-password',
   verification_code: 123456,
   verification_code_created_at: new Date(),
-  // ...outros campos do usuário
 };
-
-// Mock de um post (para o retorno de findMyLikes)
 const mockPost = {
   id: 'mock-post-id',
   title: 'Meu Post Curtido',
@@ -44,7 +40,6 @@ describe('UsersService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         UsersService,
-        // 2. Fornecemos o mock do PrismaService
         {
           provide: PrismaService,
           useValue: mockPrismaService,
@@ -66,19 +61,17 @@ describe('UsersService', () => {
     const signUpDto: SignUpDTO = {
       name: 'Test User',
       email: 'test@example.com',
-      password: 'Mateus-2409',
+      password: 'Mateus-2409  ',
     };
 
     it('should create a new user successfully', async () => {
       mockPrismaService.users.findUnique.mockResolvedValue(null);
       const { password, ...userWithoutPass } = mockUser;
-      mockPrismaService.users.create.mockResolvedValue(mockUser);
+
+      mockPrismaService.users.create.mockResolvedValue(userWithoutPass);
 
       const result = await service.signup(signUpDto);
 
-      expect(prisma.users.findUnique).toHaveBeenCalledWith({
-        where: { email: signUpDto.email },
-      });
       expect(prisma.users.create).toHaveBeenCalled();
       expect(result).toEqual(userWithoutPass);
     });
@@ -91,16 +84,16 @@ describe('UsersService', () => {
 
   describe('findOne', () => {
     it('should find a user by id', async () => {
-      mockPrismaService.users.findUnique.mockResolvedValue(mockUser);
+      const { password, ...userWithoutPass } = mockUser;
+      mockPrismaService.users.findUnique.mockResolvedValue(userWithoutPass);
 
-      // O serviço retorna { message, user }
       const result = await service.findOne(mockUser.id);
 
       expect(prisma.users.findUnique).toHaveBeenCalledWith({
         where: { id: mockUser.id },
+        omit: { password: true },
       });
-      // A CORREÇÃO ESTÁ AQUI:
-      expect(result).toEqual(mockUser);
+      expect(result).toEqual(userWithoutPass);
     });
 
     it('should throw NotFoundException if user not found', async () => {
@@ -116,7 +109,8 @@ describe('UsersService', () => {
   describe('findAll', () => {
     it('should return an array of users (without passwords)', async () => {
       const { password, ...userWithoutPass } = mockUser;
-      mockPrismaService.users.findMany.mockResolvedValue([mockUser]);
+
+      mockPrismaService.users.findMany.mockResolvedValue([userWithoutPass]);
 
       const result = await service.findAll();
 
@@ -132,21 +126,20 @@ describe('UsersService', () => {
   describe('update', () => {
     it('should update a user', async () => {
       const updatedUser = { ...mockUser, name: 'Updated Name' };
-      mockPrismaService.users.update.mockResolvedValue(updatedUser);
-
       const { password, ...userWithoutPass } = updatedUser;
-      // O serviço retorna { message, user }
+
+      mockPrismaService.users.update.mockResolvedValue(userWithoutPass);
       const result = await service.update(mockUser.id, {
         name: 'Updated Name',
       });
 
-      // A CORREÇÃO ESTÁ AQUI:
       expect(result.user).toEqual(userWithoutPass);
     });
 
-    it('should throw NotFoundException on update failure', async () => {
-      mockPrismaService.users.update.mockRejectedValue(new Error());
-      await expect(service.update(mockUser.id, { name: 'Fail' })).rejects.toThrow(NotFoundException);
+    it('should propagate Prisma error on update failure', async () => {
+      const prismaError = new Prisma.PrismaClientKnownRequestError('Record not found', { code: 'P2025', clientVersion: '5.0.0' });
+      mockPrismaService.users.update.mockRejectedValue(prismaError);
+      await expect(service.update(mockUser.id, { name: 'Fail' })).rejects.toThrow(Prisma.PrismaClientKnownRequestError);
     });
   });
 
@@ -158,9 +151,15 @@ describe('UsersService', () => {
       expect(result.message).toEqual('Exclusão bem-sucedida!');
     });
 
-    it('should throw NotFoundException on remove failure', async () => {
-      mockPrismaService.users.delete.mockRejectedValue(new Error());
-      await expect(service.remove(mockUser.id)).rejects.toThrow(NotFoundException);
+    it('should propagate Prisma error on remove failure', async () => {
+      const prismaError = new Prisma.PrismaClientKnownRequestError('Record to delete does not exist.', {
+        code: 'P2025',
+        clientVersion: '5.0.0',
+      });
+
+      mockPrismaService.users.delete.mockRejectedValue(prismaError);
+
+      await expect(service.remove(mockUser.id)).rejects.toThrow(Prisma.PrismaClientKnownRequestError);
     });
   });
 

@@ -5,7 +5,6 @@ import { AccessTokenGuard } from 'src/common/guards/accessToken.guard';
 import { CreatePostDto, UpdatePostDto } from './posts.dto';
 import { visibility_enum } from '@prisma/client';
 
-// Mock do PostsService
 const mockPostsService = {
   findPublicVitrine: jest.fn(),
   create: jest.fn(),
@@ -13,15 +12,13 @@ const mockPostsService = {
   findOne: jest.fn(),
   update: jest.fn(),
   remove: jest.fn(),
-  toggleLike: jest.fn(), // <- CORRIGIDO DE 'like' PARA 'toggleLike'
+  toggleLike: jest.fn(), 
 };
 
-// Mock do AccessTokenGuard
 const mockAccessTokenGuard = {
   canActivate: jest.fn(() => true),
 };
 
-// Dados Falsos para Testes
 const mockUserId = 'mock-user-id';
 const mockProjectId = 'mock-project-id';
 const mockPostId = 'mock-post-id';
@@ -51,12 +48,12 @@ describe('PostsController', () => {
       providers: [
         {
           provide: PostsService,
-          useValue: mockPostsService, // Usa o service mockado
+          useValue: mockPostsService, 
         },
       ],
     })
       .overrideGuard(AccessTokenGuard)
-      .useValue(mockAccessTokenGuard) // Usa o guard mockado
+      .useValue(mockAccessTokenGuard)
       .compile();
 
     controller = module.get<PostsController>(PostsController);
@@ -129,7 +126,7 @@ describe('PostsController', () => {
 
   describe('removePost (DELETE /posts/:id)', () => {
     it('should remove a post', async () => {
-      mockPostsService.remove.mockResolvedValue(undefined); // Delete não retorna nada
+      mockPostsService.remove.mockResolvedValue(undefined); 
 
       await controller.removePost(mockPostId, mockRequest);
 
@@ -137,7 +134,6 @@ describe('PostsController', () => {
     });
   });
 
-  // --- TESTE CORRIGIDO PARA TOGGLE LIKE ---
   describe('toggleLikePost (POST /posts/:id/like)', () => {
     it('should like a post and return the new status', async () => {
       const likeResponse = { liked: true, likeCount: 1 };

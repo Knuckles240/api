@@ -11,7 +11,7 @@ import {
   UpdateApplicationDto,
   FilterJobsDto,
 } from './companies.dto';
-import { ApiTags, ApiOperation } from '@nestjs/swagger'; // Importar
+import { ApiTags, ApiOperation } from '@nestjs/swagger'; 
 
 @ApiTags('Companies')
 @Controller('companies')
@@ -122,14 +122,11 @@ export class CompaniesController {
 export class JobsController {
   constructor(private readonly companiesService: CompaniesService) {}
 
-  // [NOVO] Feed de Vagas com Filtros
-  // Ex: /jobs/feed?work_type=remote&seniority=jr&search=React
   @Get('feed')
   getFeed(@Query() filters: FilterJobsDto) {
     return this.companiesService.findAllJobsPublic(filters);
   }
 
-  // [NOVO] Minhas Candidaturas
   @UseGuards(AccessTokenGuard)
   @Get('me/applications')
   getMyApplications(@Req() req) {

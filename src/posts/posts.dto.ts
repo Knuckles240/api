@@ -9,13 +9,9 @@ import {
 } from 'class-validator';
 import { visibility_enum } from '@prisma/client';
 
-/**
- * DTO para criar um novo post.
- * A visibilidade é opcional e usará o default 'public' do schema.
- */
 export class CreatePostDto {
   @IsString()
-  @MaxLength(8000) // Limite de caracteres para o post (ajuste conforme necessário)
+  @MaxLength(4000)
   @IsOptional()
   content_md?: string;
 

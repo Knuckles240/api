@@ -19,9 +19,6 @@ export class KanbanService {
     private readonly projectsService: ProjectsService,
   ) {}
 
-  /**
-   * Encontra o project_id de um quadro Kanban
-   */
   private async getProjectIdFromBoard(boardId: string) {
     const board = await this.prisma.kanban.findUnique({
       where: { id: boardId },
@@ -33,9 +30,6 @@ export class KanbanService {
     return board.project_id;
   }
 
-  /**
-   * Encontra o project_id a partir de uma coluna
-   */
   private async getProjectIdFromColumn(columnId: string) {
     const column = await this.prisma.kanban_columns.findUnique({
       where: { id: columnId },
@@ -47,9 +41,6 @@ export class KanbanService {
     return column.kanban.project_id;
   }
 
-  /**
-   * Encontra o project_id a partir de uma tarefa
-   */
   private async getProjectIdFromTask(taskId: string) {
     const task = await this.prisma.kanban_tasks.findUnique({
       where: { id: taskId },
@@ -61,9 +52,7 @@ export class KanbanService {
     return task.kanban_columns.kanban.project_id;
   }
 
-  // --- Quadros (Boards) ---
   async createBoard(dto: CreateKanbanBoardDto, projectId: string, actorId: string) {
-    // Apenas líderes podem criar/editar quadros
     await this.projectsService.checkProjectPermission(projectId, actorId, ['lider']);
 
     return this.prisma.kanban.create({
@@ -75,7 +64,6 @@ export class KanbanService {
   }
 
   async getProjectBoards(projectId: string, actorId: string) {
-    // Membros podem visualizar quadros
     await this.projectsService.checkProjectPermission(projectId, actorId, ['lider', 'membro']);
 
     return this.prisma.kanban.findMany({
@@ -126,18 +114,15 @@ export class KanbanService {
     const projectId = await this.getProjectIdFromBoard(boardId);
     await this.projectsService.checkProjectPermission(projectId, actorId, ['lider']);
 
-    // O schema (onDelete: Cascade) cuidará de deletar colunas e tarefas
     return this.prisma.kanban.delete({
       where: { id: boardId },
     });
   }
 
-  // --- Colunas (Columns) ---
   async createColumn(dto: CreateColumnDto, boardId: string, actorId: string) {
     const projectId = await this.getProjectIdFromBoard(boardId);
     await this.projectsService.checkProjectPermission(projectId, actorId, ['lider']);
 
-    // Encontra a maior posição atual para adicionar no final
     const maxPos = await this.prisma.kanban_columns.aggregate({
       where: { kanban_id: boardId },
       _max: { position: true },
@@ -167,9 +152,6 @@ export class KanbanService {
   async deleteColumn(columnId: string, actorId: string) {
     const projectId = await this.getProjectIdFromColumn(columnId);
     await this.projectsService.checkProjectPermission(projectId, actorId, ['lider']);
-
-    // O schema (onDelete: NoAction) na tarefa pode causar erro.
-    // Vamos deletar as tarefas da coluna primeiro.
     return this.prisma.$transaction(async (tx) => {
       await tx.kanban_tasks.deleteMany({
         where: { column_id: columnId },
@@ -180,10 +162,8 @@ export class KanbanService {
     });
   }
 
-  // --- Tarefas (Tasks) ---
   async createTask(dto: CreateTaskDto, columnId: string, actorId: string) {
     const projectId = await this.getProjectIdFromColumn(columnId);
-    // Membros podem criar tarefas
     await this.projectsService.checkProjectPermission(projectId, actorId, ['lider', 'membro']);
 
     const maxPos = await this.prisma.kanban_tasks.aggregate({
@@ -217,8 +197,6 @@ export class KanbanService {
     const projectId = await this.getProjectIdFromTask(taskId);
     await this.projectsService.checkProjectPermission(projectId, actorId, ['lider', 'membro']);
 
-    // TODO: Implementar lógica transacional complexa para reordenar
-    // Por enquanto, apenas movemos
     return this.prisma.kanban_tasks.update({
       where: { id: taskId },
       data: {
@@ -232,19 +210,15 @@ export class KanbanService {
     const projectId = await this.getProjectIdFromTask(taskId);
     await this.projectsService.checkProjectPermission(projectId, actorId, ['lider', 'membro']);
 
-    // O schema (onDelete: Cascade) em users_tasks cuidará dos assignees
     return this.prisma.kanban_tasks.delete({
       where: { id: taskId },
     });
   }
 
-  // --- Assignees (users_tasks) ---
   async assignTask(taskId: string, dto: AssignTaskDto, actorId: string) {
     const projectId = await this.getProjectIdFromTask(taskId);
-    // 1. Verifica se o ator (quem assigna) é membro
     await this.projectsService.checkProjectPermission(projectId, actorId, ['lider', 'membro']);
 
-    // 2. Verifica se o usuário (quem é assignado) também é membro
     const permission = await this.projectsService.checkProjectPermission(projectId, dto.user_id, ['lider', 'membro']);
     if (!permission) throw new ForbiddenException('Não é possível assignar um usuário que não é membro do projeto.');
 

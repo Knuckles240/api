@@ -12,7 +12,7 @@ export class AuthService {
   constructor(
     private usersService: UsersService,
     private jwtService: JwtService,
-    private prismaService: PrismaService, // <--- AQUI ESTAVA O ERRO
+    private prismaService: PrismaService,
   ) {}
 
   async signup(data: SignUpDTO) {
@@ -92,7 +92,6 @@ export class AuthService {
     return true;
   }
 
-  // --- CADASTRO CORPORATIVO ---
   async signupCompany(data: SignUpCompanyDto) {
     const userExists = await this.usersService.findOne(undefined, data.user_email).catch(() => null);
     if (userExists) throw new BadRequestException('Email já cadastrado.');

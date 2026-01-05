@@ -4,14 +4,12 @@ import { UsersService } from './users.service';
 import { AccessTokenGuard } from 'src/common/guards/accessToken.guard';
 import { UpdateDto } from './users.dto';
 
-// 1. Mockamos o UsersService
 const mockUsersService = {
   findOne: jest.fn(),
   update: jest.fn(),
   remove: jest.fn(),
 };
 
-// 2. Mockamos o Guard
 const mockAccessTokenGuard = {
   canActivate: jest.fn(() => true),
 };
@@ -36,14 +34,12 @@ describe('UsersController', () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [UsersController],
       providers: [
-        // 3. Fornecemos o mock do UsersService
         {
           provide: UsersService,
           useValue: mockUsersService,
         },
       ],
     })
-      // 4. Sobrescrevemos o guard
       .overrideGuard(AccessTokenGuard)
       .useValue(mockAccessTokenGuard)
       .compile();

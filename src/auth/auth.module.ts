@@ -5,7 +5,7 @@ import { UsersModule } from 'src/users/users.module';
 import { JwtModule } from '@nestjs/jwt';
 import { AccessTokenStrategy } from './strategies/accessToken.strategy';
 import { RefreshTokenStrategy } from './strategies/refreshToken.strategy';
-import { PrismaService } from 'src/database/prisma.service'; // 1. Importar
+import { PrismaService } from 'src/database/prisma.service';
 
 @Module({
   imports: [UsersModule, JwtModule.register({})],

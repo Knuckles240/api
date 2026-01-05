@@ -52,5 +52,5 @@ export class AddMemberDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(30)
-  role: string; // Ex: 'lider', 'membro'
+  role: string; 
 }

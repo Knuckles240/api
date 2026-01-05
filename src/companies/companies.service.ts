@@ -54,14 +54,12 @@ export class CompaniesService {
     return this.prisma.companies.delete({ where: { id } });
   }
 
-  // [NOVO] Busca Inteligente de Vagas (Feed)
   async findAllJobsPublic(filters: FilterJobsDto) {
     const { search, work_type, seniority, location } = filters;
 
     return this.prisma.jobs.findMany({
       where: {
-        status: 'active', // Apenas vagas ativas na vitrine
-        // Filtro por busca de texto (Título ou Descrição)
+        status: 'active', 
         OR: search
           ? [{ title: { contains: search, mode: 'insensitive' } }, { description_md: { contains: search, mode: 'insensitive' } }]
           : undefined,
@@ -70,7 +68,7 @@ export class CompaniesService {
         location: location ? { contains: location, mode: 'insensitive' } : undefined,
       },
       include: {
-        companies: { select: { name: true, logo_url: true } }, // Inclui dados da empresa
+        companies: { select: { name: true, logo_url: true } },
       },
       orderBy: { created_at: 'desc' },
     });

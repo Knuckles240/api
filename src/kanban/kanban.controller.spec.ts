@@ -4,7 +4,6 @@ import { KanbanService } from './kanban.service';
 import { AccessTokenGuard } from 'src/common/guards/accessToken.guard';
 import { CreateKanbanBoardDto, AssignTaskDto, MoveTaskDto } from './kanban.dto';
 
-// Mock do KanbanService
 const mockKanbanService = {
   createBoard: jest.fn(),
   getProjectBoards: jest.fn(),
@@ -22,12 +21,10 @@ const mockKanbanService = {
   unassignTask: jest.fn(),
 };
 
-// Mock do Guard
 const mockAccessTokenGuard = {
   canActivate: jest.fn(() => true),
 };
 
-// --- Dados Mockados ---
 const mockActorId = 'user-actor-id';
 const mockProjectId = 'project-123';
 const mockBoardId = 'board-123';
@@ -65,7 +62,6 @@ describe('KanbanController', () => {
     expect(controller).toBeDefined();
   });
 
-  // --- Testes de Board ---
   describe('createBoard', () => {
     it('should call service.createBoard with correct params', async () => {
       const dto: CreateKanbanBoardDto = { name: 'Novo Quadro' };
@@ -98,7 +94,6 @@ describe('KanbanController', () => {
     });
   });
 
-  // --- Testes de Coluna ---
   describe('createColumn', () => {
     it('should call service.createColumn', async () => {
       const dto = { name: 'Nova Coluna' };
@@ -110,7 +105,6 @@ describe('KanbanController', () => {
     });
   });
 
-  // --- Testes de Tarefa ---
   describe('createTask', () => {
     it('should call service.createTask', async () => {
       const dto = { title: 'Nova Tarefa' };
@@ -132,7 +126,6 @@ describe('KanbanController', () => {
     });
   });
 
-  // --- Testes de Ações ---
   describe('moveTask', () => {
     it('should call service.moveTask', async () => {
       const dto: MoveTaskDto = { new_column_id: 'col-2', new_position: 0 };

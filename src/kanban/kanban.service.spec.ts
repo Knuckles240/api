@@ -5,7 +5,6 @@ import { ProjectsService } from 'src/projects/projects.service';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { CreateTaskDto } from './kanban.dto';
 
-// Mock do PrismaService
 const mockPrismaService = {
   kanban: {
     findUnique: jest.fn(),
@@ -33,13 +32,10 @@ const mockPrismaService = {
   $transaction: jest.fn().mockImplementation((callback) => callback(mockPrismaService)),
 };
 
-// Mock do ProjectsService (a dependência injetada)
 const mockProjectsService = {
-  // A função de permissão não retorna nada em caso de sucesso, apenas não dá erro
-  checkProjectPermission: jest.fn().mockResolvedValue(undefined),
+  checkProjectPermission: jest.fn().mockResolvedValue(true),
 };
 
-// --- Dados Mockados ---
 const mockActorId = 'user-actor-id';
 const mockProjectId = 'project-123';
 const mockBoardId = 'board-123';
@@ -77,7 +73,7 @@ describe('KanbanService', () => {
       providers: [
         KanbanService,
         { provide: PrismaService, useValue: mockPrismaService },
-        { provide: ProjectsService, useValue: mockProjectsService }, // Fornece o mock
+        { provide: ProjectsService, useValue: mockProjectsService },
       ],
     }).compile();
 
@@ -92,16 +88,10 @@ describe('KanbanService', () => {
     expect(service).toBeDefined();
   });
 
-  // --- Testes de Permissão (Helpers) ---
-  // Vamos testar um método que usa os helpers, como getBoardDetails
-
   describe('getBoardDetails', () => {
     it('should get board details if user is a member', async () => {
-      // 1. Mock para o helper getProjectIdFromBoard
       mockPrismaService.kanban.findUnique.mockResolvedValueOnce(mockBoard);
-      // 2. Mock para checkProjectPermission (sucesso)
       mockProjectsService.checkProjectPermission.mockResolvedValueOnce(undefined);
-      // 3. Mock para o findUnique principal do método
       mockPrismaService.kanban.findUnique.mockResolvedValueOnce(mockBoard);
 
       const result = await service.getBoardDetails(mockBoardId, mockActorId);
@@ -116,9 +106,7 @@ describe('KanbanService', () => {
     });
 
     it('should throw ForbiddenException if user is not a member', async () => {
-      // 1. Mock para o helper
       mockPrismaService.kanban.findUnique.mockResolvedValueOnce(mockBoard);
-      // 2. Mock para checkProjectPermission (falha)
       mockProjectsService.checkProjectPermission.mockRejectedValueOnce(new ForbiddenException());
 
       await expect(service.getBoardDetails(mockBoardId, 'wrong-user-id')).rejects.toThrow(ForbiddenException);
@@ -127,15 +115,12 @@ describe('KanbanService', () => {
     });
 
     it('should throw NotFoundException if board does not exist', async () => {
-      // 1. Mock para o helper (não encontra o quadro)
       mockPrismaService.kanban.findUnique.mockResolvedValueOnce(null);
 
       await expect(service.getBoardDetails(mockBoardId, mockActorId)).rejects.toThrow(NotFoundException);
       expect(projectsService.checkProjectPermission).not.toHaveBeenCalled();
     });
   });
-
-  // --- Testes de Nível de Permissão (Líder vs Membro) ---
 
   describe('createBoard', () => {
     it('should allow a leader to create a board', async () => {
@@ -152,13 +137,9 @@ describe('KanbanService', () => {
 
   describe('createTask', () => {
     it('should allow a member to create a task', async () => {
-      // 1. Helper getProjectIdFromColumn
       mockPrismaService.kanban_columns.findUnique.mockResolvedValueOnce(mockColumn);
-      // 2. checkProjectPermission
       mockProjectsService.checkProjectPermission.mockResolvedValueOnce(undefined);
-      // 3. aggregate
       mockPrismaService.kanban_tasks.aggregate.mockResolvedValueOnce({ _max: { position: 1 } });
-      // 4. create
       mockPrismaService.kanban_tasks.create.mockResolvedValueOnce(mockTask);
 
       const dto: CreateTaskDto = { title: 'Nova Tarefa' };
@@ -168,7 +149,7 @@ describe('KanbanService', () => {
       expect(prisma.kanban_tasks.create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({
-            position: 2, // 1 (max) + 1
+            position: 2,
             created_by: mockActorId,
           }),
         }),
@@ -177,17 +158,11 @@ describe('KanbanService', () => {
     });
   });
 
-  // --- Teste de Lógica Complexa (AssignTask) ---
-
   describe('assignTask', () => {
     it('should assign a user if actor and user are members', async () => {
-      // 1. Helper getProjectIdFromTask
       mockPrismaService.kanban_tasks.findUnique.mockResolvedValueOnce(mockTask);
-      // 2. checkProjectPermission (actor)
-      mockProjectsService.checkProjectPermission.mockResolvedValueOnce(undefined);
-      // 3. checkProjectPermission (user to be assigned)
-      mockProjectsService.checkProjectPermission.mockResolvedValueOnce(undefined);
-      // 4. create users_tasks
+      mockProjectsService.checkProjectPermission.mockResolvedValueOnce(true);
+      mockProjectsService.checkProjectPermission.mockResolvedValueOnce(true); // <--- CORREÇÃO AQUI
       mockPrismaService.users_tasks.create.mockResolvedValueOnce({} as any);
 
       await service.assignTask(mockTaskId, { user_id: mockMemberId }, mockActorId);
@@ -199,11 +174,8 @@ describe('KanbanService', () => {
     });
 
     it('should throw ForbiddenException if user to assign is not a member', async () => {
-      // 1. Helper
       mockPrismaService.kanban_tasks.findUnique.mockResolvedValueOnce(mockTask);
-      // 2. checkProjectPermission (actor) - SUCESSO
       mockProjectsService.checkProjectPermission.mockResolvedValueOnce(undefined);
-      // 3. checkProjectPermission (user to be assigned) - FALHA
       mockProjectsService.checkProjectPermission.mockRejectedValueOnce(new ForbiddenException());
 
       const dto = { user_id: 'non-member-id' };

@@ -23,7 +23,7 @@ export class CreateJobDto {
 }
 
 export class UpdateJobDto extends PartialType(CreateJobDto) {
-  @IsString() @IsOptional() status?: string; // 'active', 'closed'
+  @IsString() @IsOptional() status?: string;
 }
 
 export class FilterJobsDto {

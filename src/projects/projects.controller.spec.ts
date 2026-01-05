@@ -5,7 +5,6 @@ import { AccessTokenGuard } from 'src/common/guards/accessToken.guard';
 import { CreateProjectDto, UpdateProjectDto, AddMemberDto } from './projects.dto';
 import { project_status_enum, visibility_enum } from '@prisma/client';
 
-// Mock do nosso ProjectsService. Ele não terá lógica, só funções vazias (jest.fn()).
 const mockProjectsService = {
   create: jest.fn(),
   findMyProjects: jest.fn(),
@@ -16,12 +15,10 @@ const mockProjectsService = {
   removeMember: jest.fn(),
 };
 
-// Mock do nosso AccessTokenGuard. Vamos forçar ele a sempre "passar" (retornar true).
 const mockAccessTokenGuard = {
   canActivate: jest.fn(() => true),
 };
 
-// Dados falsos que vamos usar nos testes
 const mockUserId = 'mock-user-id';
 const mockProjectId = 'mock-project-id';
 const mockRequest = {
@@ -36,7 +33,6 @@ const mockProject = {
   owner_user_id: mockUserId,
   visibility: visibility_enum.public,
   status: project_status_enum.active,
-  // ... outros campos do projeto
 };
 
 describe('ProjectsController', () => {
@@ -44,24 +40,22 @@ describe('ProjectsController', () => {
   let service: ProjectsService;
 
   beforeEach(async () => {
-    // Cria um módulo de teste "fake"
     const module: TestingModule = await Test.createTestingModule({
       controllers: [ProjectsController],
       providers: [
         {
           provide: ProjectsService,
-          useValue: mockProjectsService, // Usa o service mockado
+          useValue: mockProjectsService,
         },
       ],
     })
       .overrideGuard(AccessTokenGuard)
-      .useValue(mockAccessTokenGuard) // Usa o guard mockado
+      .useValue(mockAccessTokenGuard) 
       .compile();
 
     controller = module.get<ProjectsController>(ProjectsController);
     service = module.get<ProjectsService>(ProjectsService);
 
-    // Limpa os mocks antes de cada teste
     jest.clearAllMocks();
   });
 
@@ -75,14 +69,11 @@ describe('ProjectsController', () => {
         title: 'Novo Projeto',
       };
 
-      // Define o que o service.create deve retornar QUANDO for chamado
       mockProjectsService.create.mockResolvedValue(mockProject);
 
       const result = await controller.create(createDto, mockRequest);
 
-      // Verifica se o controller chamou o service com os dados corretos
       expect(service.create).toHaveBeenCalledWith(createDto, mockUserId);
-      // Verifica se o controller retornou o que o service deu a ele
       expect(result).toEqual(mockProject);
     });
   });
@@ -134,7 +125,6 @@ describe('ProjectsController', () => {
 
   describe('remove (DELETE /projects/:id)', () => {
     it('should remove a project', async () => {
-      // Funções de "delete" geralmente não retornam nada
       mockProjectsService.remove.mockResolvedValue(undefined);
 
       await controller.remove(mockProjectId, mockRequest);

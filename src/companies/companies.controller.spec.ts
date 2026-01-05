@@ -5,14 +5,13 @@ import { AccessTokenGuard } from 'src/common/guards/accessToken.guard';
 import { CreateJobDto, UpdateCompanyDto, UpdateJobDto, AddTeamMemberDto, UpdateTeamMemberDto, ApplyJobDto, UpdateApplicationDto, FilterJobsDto } from './companies.dto';
 import { job_work_type_enum, job_seniority_enum } from '@prisma/client';
 
-// Mock do Service com TODOS os métodos da Versão V3.0
 const mockCompaniesService = {
   findAll: jest.fn(),
   findOne: jest.fn(),
   update: jest.fn(),
   remove: jest.fn(),
-  findAllJobsPublic: jest.fn(), // Novo (Feed)
-  findStudentApplications: jest.fn(), // Novo (Painel Aluno)
+  findAllJobsPublic: jest.fn(), 
+  findStudentApplications: jest.fn(), 
   createJob: jest.fn(),
   updateJob: jest.fn(),
   deleteJob: jest.fn(),
@@ -29,7 +28,6 @@ const mockAccessTokenGuard = {
   canActivate: jest.fn(() => true),
 };
 
-// Dados Fake para os testes
 const mockUserId = 'user-uuid-123';
 const mockCompanyId = 'company-uuid-456';
 const mockJobId = 'job-uuid-789';
@@ -65,8 +63,6 @@ describe('Companies & Jobs Controllers', () => {
     expect(jobsController).toBeDefined();
   });
 
-  // --- TESTES DO COMPANIES CONTROLLER ---
-
   describe('findAll (Empresas)', () => {
     it('should return list of companies with filter', async () => {
       mockCompaniesService.findAll.mockResolvedValue([]);
@@ -89,8 +85,6 @@ describe('Companies & Jobs Controllers', () => {
       expect(service.remove).toHaveBeenCalledWith(mockCompanyId, mockUserId);
     });
   });
-
-  // --- TESTES DE GESTÃO DE VAGAS ---
 
   describe('createJob', () => {
     it('should create a job', async () => {
@@ -115,8 +109,6 @@ describe('Companies & Jobs Controllers', () => {
     });
   });
 
-  // --- TESTES DE EQUIPE ---
-
   describe('Team Management', () => {
     it('should add a team member', async () => {
       const dto: AddTeamMemberDto = { user_email: 'rh@test.com', role: 'recruiter' };
@@ -136,8 +128,6 @@ describe('Companies & Jobs Controllers', () => {
     });
   });
 
-  // --- TESTES DE ATS (EMPRESA) ---
-
   describe('ATS Features', () => {
     it('should get job applications', async () => {
       await companiesController.getApplications(mockCompanyId, mockJobId, mockRequest);
@@ -150,8 +140,6 @@ describe('Companies & Jobs Controllers', () => {
       expect(service.updateApplicationStatus).toHaveBeenCalledWith(mockCompanyId, mockAppId, dto, mockUserId);
     });
   });
-
-  // --- TESTES DO JOBS CONTROLLER (ALUNO/FEED) ---
 
   describe('JobsController (Public/Student)', () => {
     it('should return feed with filters', async () => {
